@@ -1,0 +1,94 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  CUSTOMER
+  RESTAURANT_OWNER
+  ADMIN
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+  NO_SHOW
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  firstName String
+  lastName  String
+  phone     String?
+  role      UserRole @default(CUSTOMER)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  restaurants Restaurant[]
+  bookings    Booking[]
+}
+
+model Restaurant {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  address     String
+  city        String
+  state       String
+  zipCode     String
+  phone       String
+  email       String?
+  website     String?
+  cuisine     String[]
+  priceRange  Int      @default(2) // 1-4 scale
+  rating      Float    @default(0)
+  reviewCount Int      @default(0)
+  imageUrl    String?
+  
+  // Operating hours stored as JSON or separate table - simplified here
+  openingTime String   // e.g., "09:00"
+  closingTime String   // e.g., "22:00"
+  
+  // Seating capacity and table info
+  totalTables Int      @default(20)
+  capacity    Int      @default(80)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  ownerId     String
+  owner       User     @relation(fields: [ownerId], references: [id])
+  bookings    Booking[]
+}
+
+model Booking {
+  id           String        @id @default(uuid())
+  date         DateTime
+  time         String        // e.g., "19:00"
+  partySize    Int
+  status       BookingStatus @default(PENDING)
+  specialRequests String?
+  
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  
+  // Relations
+  userId       String
+  user         User          @relation(fields: [userId], references: [id])
+  restaurantId String
+  restaurant   Restaurant    @relation(fields: [restaurantId], references: [id])
+}
